@@ -4,6 +4,13 @@
 import pygame
 import random
 
+N_STARS = 30000
+WIDTH = 1600
+HEIGHT = 800
+MID_X = WIDTH // 2
+MID_Y = HEIGHT // 2
+
+
 # A class for a star. It has a position within a frustrum with coordinates between -1 and 1 (float)
 
 class Star:
@@ -22,25 +29,32 @@ class Star:
 
 
 
+
+
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((1024, 800))
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption('Starfield')
     # Make the window visible
     clock = pygame.time.Clock()
     # Create a list of stars
     stars = []
-    for i in range(10000):
+    for i in range(N_STARS):
         x = random.uniform(-1, 1)
         y = random.uniform(-1, 1)
         z = random.uniform(0, 1)
         stars.append(Star(x, y, z))
+    speed = 0.02
 
-    speed = 0.01
+
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
 
         screen.fill((0, 0, 0))
         # Draw the stars, perspective correct
@@ -49,8 +63,8 @@ def main():
             x = star.x / star.z
             y = star.y / star.z
             # Scale the stars to the screen
-            x = int(x * 1024) + 512
-            y = int(y * 800) + 400
+            x = int(x * WIDTH) + MID_X
+            y = int(y * WIDTH) + MID_Y
             # Draw the star
             # Calculate greyscale based on z
             greyscale = int((1-star.z)*255)
