@@ -4,7 +4,7 @@
 import pygame
 import random
 
-N_STARS = 30000
+N_STARS = 10000
 WIDTH = 1600
 HEIGHT = 800
 MID_X = WIDTH // 2
@@ -18,16 +18,47 @@ class Star:
         self.x = x
         self.y = y
         self.z = z
-
+        self.randomize_color()
     
+    def randomize_color(self):
+        self.color = tuple(random.randint(200,255) for _ in range(3))
+        # Now randomize to that I uniformly get 1 or 2 randomly picked components of the color tuple
+        # set to 0
+        zerotoone = random.random()
+        if zerotoone < 0.4:
+            chosen_index = random.randint(0,2)
+            self.color = list(self.color)
+            self.color[chosen_index] = 0
+            self.color = tuple(self.color)
+        elif zerotoone < 0.8:
+            # now select one to keep
+            chosen_index = random.randint(0,2)
+            self.color = list(self.color)
+            kept_color = self.color[chosen_index]
+            self.color = [0,0,0]
+            self.color[chosen_index] = kept_color
+
+    def restart_from_back(self):
+        self.z = 1
+        self.x = random.uniform(-1, 1)
+        self.y = random.uniform(-1, 1)
+        self.randomize_color()
+#        self.color = tuple(random.randint(200,255) for _ in range(3))
+
     def update(self, speed):
         self.z -= speed
         if self.z <= 0:
-            self.z = 1
-            self.x = random.uniform(-1, 1)
-            self.y = random.uniform(-1, 1)
+            return self.restart_from_back()
 
 
+def is_inside_viewport_of_current_resolution(x, y, z):
+    x = x / z
+    y = y / z
+    x = int(x * WIDTH) + MID_X
+    y = int(y * WIDTH) + MID_Y
+    if x < 0 or x >= WIDTH or y < 0 or y >= HEIGHT:
+        return False
+    return True
 
 
 
@@ -40,11 +71,14 @@ def main():
     # Create a list of stars
     stars = []
     for i in range(N_STARS):
-        x = random.uniform(-1, 1)
-        y = random.uniform(-1, 1)
-        z = random.uniform(0, 1)
+        x, y, z = 14, 14, 14
+        while not is_inside_viewport_of_current_resolution(x, y, z):
+            x = random.uniform(-1, 1)
+            y = random.uniform(-1, 1)
+            z = random.uniform(0, 1)
+        # while this is outside of the viewport, move it towards the center of the screen, 0, 0
         stars.append(Star(x, y, z))
-    speed = 0.02
+    speed = 0.01
 
 
 
@@ -53,7 +87,7 @@ def main():
             if event.type == pygame.QUIT:
                 return
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                     return
 
         screen.fill((0, 0, 0))
@@ -65,12 +99,18 @@ def main():
             # Scale the stars to the screen
             x = int(x * WIDTH) + MID_X
             y = int(y * WIDTH) + MID_Y
+            if x < 0 or x >= WIDTH or y < 0 or y >= HEIGHT:
+                star.restart_from_back()
+                continue
             # Draw the star
             # Calculate greyscale based on z
-            greyscale = int((1-star.z)*255)
-            pygame.draw.circle(screen, (greyscale, greyscale, greyscale), (x, y), 4-star.z*4)
-            star.update(speed)
+            scale_factor = (1 - star.z)
+            pygame.draw.circle(screen, (int(scale_factor*star.color[0]),
+                                        int(scale_factor*star.color[1]), 
+                                        int(scale_factor*star.color[2]))
+                             , (x, y), 4-star.z*4)
 
+            star.update(speed)
         pygame.display.flip()
         clock.tick(60)
 
